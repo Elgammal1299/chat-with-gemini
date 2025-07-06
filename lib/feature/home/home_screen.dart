@@ -33,21 +33,51 @@ class HomeScreenView extends StatelessWidget {
         ),
         backgroundColor: AppColors.primaryColor,
         elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: () {
+              context.read<ChatCubit>().debugHiveStatus();
+            },
+            icon: const Icon(Icons.bug_report, color: Colors.white),
+            tooltip: 'Debug Info',
+          ),
+          IconButton(
+            onPressed: () {
+              context.read<ChatCubit>().debugTestImageProcessing();
+            },
+            icon: const Icon(Icons.image, color: Colors.white),
+            tooltip: 'Test Image Processing',
+          ),
+          IconButton(
+            onPressed: () => _showClearAllDialog(context),
+            icon: const Icon(Icons.clear_all, color: Colors.white),
+            tooltip: 'Clear All Data',
+          ),
+        ],
       ),
       body: BlocBuilder<ChatCubit, ChatState>(
-        buildWhen:
-            (previous, current) =>
-                current is ConversationsLoaded || current is ChatError,
+        buildWhen: (previous, current) {
+          print(
+            '🏠 Home BlocBuilder buildWhen - Previous: $previous, Current: $current',
+          );
+          return current is ConversationsLoaded ||
+              current is ChatError ||
+              current is ChatLoading;
+        },
         builder: (context, state) {
+          print('🏠 Home BlocBuilder builder called with state: $state');
           if (state is ChatLoading) {
+            print('🏠 Showing loading indicator');
             return const Center(child: CircularProgressIndicator());
           }
 
           if (state is ConversationsLoaded) {
+            print('🏠 Showing conversations: ${state.conversations.length}');
             return _buildHomeContent(context, state.conversations);
           }
 
           if (state is ChatError) {
+            print('🏠 Showing error: ${state.error}');
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -72,6 +102,7 @@ class HomeScreenView extends StatelessWidget {
           }
 
           // Default state - show loading
+          print('🏠 Showing default loading');
           return const Center(child: CircularProgressIndicator());
         },
       ),
@@ -209,10 +240,22 @@ class HomeScreenView extends StatelessWidget {
           onSelected: (value) {
             if (value == 'delete') {
               _deleteConversation(context, conversation.id);
+            } else if (value == 'debug') {
+              _showConversationDebugInfo(context, conversation);
             }
           },
           itemBuilder:
               (context) => [
+                const PopupMenuItem(
+                  value: 'debug',
+                  child: Row(
+                    children: [
+                      Icon(Icons.info, color: Colors.blue),
+                      SizedBox(width: 8),
+                      Text('Debug Info'),
+                    ],
+                  ),
+                ),
                 const PopupMenuItem(
                   value: 'delete',
                   child: Row(
@@ -292,26 +335,198 @@ class HomeScreenView extends StatelessWidget {
   }
 
   void _deleteConversation(BuildContext context, String conversationId) {
+    print('🗑️ Delete conversation called with ID: $conversationId');
+
+    // Show confirmation dialog first
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder:
-          (context) => AlertDialog(
+          (dialogContext) => AlertDialog(
             title: const Text('Delete Conversation'),
             content: const Text(
               'Are you sure you want to delete this conversation? This action cannot be undone.',
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                },
                 child: const Text('Cancel'),
               ),
               TextButton(
-                onPressed: () {
-                  context.read<ChatCubit>().deleteConversation(conversationId);
-                  Navigator.pop(context);
+                onPressed: () async {
+                  print('🗑️ Delete button pressed, starting deletion...');
+                  Navigator.pop(dialogContext); // Close confirmation dialog
+
+                  // Show loading dialog
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder:
+                        (loadingContext) => AlertDialog(
+                          title: const Text('Deleting Conversation'),
+                          content: const Row(
+                            children: [
+                              CircularProgressIndicator(),
+                              SizedBox(width: 16),
+                              Text('Please wait...'),
+                            ],
+                          ),
+                        ),
+                  );
+
+                  try {
+                    await context.read<ChatCubit>().deleteConversation(
+                      conversationId,
+                    );
+                    Navigator.pop(context); // Close loading dialog
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Conversation deleted successfully'),
+                      ),
+                    );
+                  } catch (e) {
+                    Navigator.pop(context); // Close loading dialog
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error deleting conversation: $e'),
+                      ),
+                    );
+                  }
                 },
                 style: TextButton.styleFrom(foregroundColor: Colors.red),
                 child: const Text('Delete'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _showClearAllDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Clear All Data'),
+            content: const Text(
+              'Are you sure you want to clear all conversations? This action cannot be undone.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  print(
+                    '🗑️ Clear all data button pressed, starting deletion...',
+                  );
+                  Navigator.pop(context); // Close confirmation dialog
+
+                  // Show loading dialog
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder:
+                        (loadingContext) => AlertDialog(
+                          title: const Text('Deleting all conversations'),
+                          content: const Row(
+                            children: [
+                              CircularProgressIndicator(),
+                              SizedBox(width: 16),
+                              Text('Please wait...'),
+                            ],
+                          ),
+                        ),
+                  );
+
+                  try {
+                    await context.read<ChatCubit>().clearAllData();
+                    Navigator.pop(context); // Close loading dialog
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('All conversations deleted successfully'),
+                      ),
+                    );
+                  } catch (e) {
+                    Navigator.pop(context); // Close loading dialog
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error deleting conversations: $e'),
+                      ),
+                    );
+                  }
+                },
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Clear All Data'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _showConversationDebugInfo(
+    BuildContext context,
+    ConversationModel conversation,
+  ) {
+    final cubit = context.read<ChatCubit>();
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Conversation Debug Info'),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('ID: ${conversation.id}'),
+                  const SizedBox(height: 8),
+                  Text('Title: ${conversation.title}'),
+                  const SizedBox(height: 8),
+                  Text('Last Message: ${conversation.lastMessagepreview}'),
+                  const SizedBox(height: 8),
+                  Text('Created: ${conversation.createdAt}'),
+                  const SizedBox(height: 8),
+                  Text('Is User: ${conversation.isUser}'),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Actions:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      try {
+                        await cubit.deleteConversation(conversation.id);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Conversation deleted successfully'),
+                          ),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                    ),
+                    child: const Text('Force Delete This Conversation'),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
               ),
             ],
           ),

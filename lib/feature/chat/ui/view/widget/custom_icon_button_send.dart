@@ -39,9 +39,8 @@ class CustomIconButtonSend extends StatelessWidget {
               BlocProvider.of<ChatCubit>(
                 context,
               ).sendMessage(_messageController.text);
-              BlocProvider.of<ChatCubit>(context).removeImage();
               _messageController.clear();
-              scrollDown!();
+              scrollDown?.call();
             }
           },
         );
@@ -54,8 +53,8 @@ class CustomIconButtonSend extends StatelessWidget {
               backgroundColor: Colors.red,
             ),
           );
-        } else if (state is ChatSuccess) {
-          scrollDown!();
+        } else if (state is ChatSuccess && state.messages.isNotEmpty) {
+          scrollDown?.call();
         }
       },
     );

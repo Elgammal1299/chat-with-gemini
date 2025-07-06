@@ -107,11 +107,17 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _scrollDown() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: Duration(microseconds: 700),
-        curve: Curves.easeInOut,
-      );
+      // Add a small delay to ensure the ListView is properly built
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (_scrollController.hasClients &&
+            _scrollController.position.maxScrollExtent > 0) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 700),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
     });
   }
 
@@ -192,7 +198,10 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return BlocListener<ChatCubit, ChatState>(
       listenWhen:
-          (previous, current) => current is ChatSuccess || current is ChatError,
+          (previous, current) =>
+              current is ChatSuccess ||
+              current is ChatError ||
+              current is ConversationsLoaded,
       listener: (context, state) {
         if (state is ChatSuccess) {
           // Check if we're in a save operation context
@@ -208,6 +217,17 @@ class _ChatScreenState extends State<ChatScreen> {
           ).showSnackBar(SnackBar(content: Text('Error: ${state.error}')));
           Navigator.pop(context); // Close dialog
           _titleController.clear();
+        } else if (state is ConversationsLoaded) {
+          // Check if current conversation was deleted
+          final cubit = context.read<ChatCubit>();
+          if (cubit.isCurrentConversationDeleted()) {
+            cubit.clearCurrentConversation();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('This conversation has been deleted'),
+              ),
+            );
+          }
         }
       },
       child: Scaffold(
@@ -220,8 +240,12 @@ class _ChatScreenState extends State<ChatScreen> {
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
-              // Don't reset state when going back, just navigate
+              print('🔙 Back button pressed in chat screen');
+              // Reset chat state and load conversations when going back
+              final cubit = context.read<ChatCubit>();
+              cubit.resetState();
               Navigator.pop(context);
+              print('🔙 Navigated back to home screen');
             },
           ),
           actions: [
@@ -240,6 +264,13 @@ class _ChatScreenState extends State<ChatScreen> {
                 }
                 return const SizedBox.shrink();
               },
+            ),
+            IconButton(
+              onPressed: () {
+                context.read<ChatCubit>().debugTestImageProcessing();
+              },
+              icon: const Icon(Icons.image),
+              tooltip: 'Test Image Processing',
             ),
           ],
         ),

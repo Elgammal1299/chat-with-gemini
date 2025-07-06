@@ -22,16 +22,36 @@ class ChatService {
   }
 
   Future<String?> sentMessage(String message, [File? image]) async {
+    print('🖼️ ChatService.sentMessage called');
+    print('🖼️ Message: $message');
+    print('🖼️ Image: ${image?.path ?? 'null'}');
+
     late final Content content;
     if (image != null) {
+      print('🖼️ Processing image: ${image.path}');
       String mimeType =
           image.path.endsWith('.png') ? 'image/png' : 'image/jpeg';
+      print('🖼️ MIME type: $mimeType');
+
       final bytes = await image.readAsBytes();
+      print('🖼️ Image bytes: ${bytes.length} bytes');
+
       content = Content.multi([TextPart(message), DataPart(mimeType, bytes)]);
+      print('🖼️ Created multi-content with image');
     } else {
+      print('🖼️ No image, creating text-only content');
       content = Content.text(message);
     }
-    final response = await _chatSession.sendMessage(content);
-    return response.text;
+
+    print('🖼️ Sending message to Gemini...');
+    try {
+      final response = await _chatSession.sendMessage(content);
+      print('🖼️ Received response from Gemini');
+      print('🖼️ Response text: ${response.text}');
+      return response.text;
+    } catch (e) {
+      print('🖼️ Error from Gemini API: $e');
+      rethrow;
+    }
   }
 }

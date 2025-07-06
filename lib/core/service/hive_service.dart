@@ -65,7 +65,9 @@ class HiveService<T> {
 
   Future<void> deleteItem(String key) async {
     final box = _ensureBox;
+    print('Deleting item with key: $key from box: $boxName');
     await box.delete(key);
+    print('Item deleted successfully');
   }
 
   Future<void> clearBox() async {
@@ -77,5 +79,14 @@ class HiveService<T> {
     final box = _ensureBox;
     await box.close();
     _box = null;
+  }
+
+  bool isBoxOpen() {
+    return _box != null && _box!.isOpen;
+  }
+
+  int getBoxSize() {
+    if (_box == null || !_box!.isOpen) return 0;
+    return _box!.length;
   }
 }

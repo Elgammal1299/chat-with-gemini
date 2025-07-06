@@ -125,9 +125,8 @@ class CustomTextField extends StatelessWidget {
                     BlocProvider.of<ChatCubit>(
                       context,
                     ).sendMessage(_messageController.text);
-                    BlocProvider.of<ChatCubit>(context).removeImage();
                     _messageController.clear();
-                    scrollDown!();
+                    scrollDown?.call();
                   }
                 },
                 decoration: InputDecoration(
