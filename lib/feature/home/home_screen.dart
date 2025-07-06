@@ -52,9 +52,10 @@ class _HomeScreenState extends State<HomeScreen> {
           print(
             '🏠 Home BlocBuilder buildWhen - Previous: $previous, Current: $current',
           );
+          // Only rebuild for states that affect the home screen
           return current is ConversationsLoaded ||
               current is ChatError ||
-              current is ChatLoading;
+              (current is ChatLoading && previous is! ChatLoading);
         },
         builder: (context, state) {
           print('🏠 Home BlocBuilder builder called with state: $state');

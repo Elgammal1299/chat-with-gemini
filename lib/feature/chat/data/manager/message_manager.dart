@@ -13,7 +13,8 @@ class MessageManager {
     try {
       print('💬 Initializing MessageManager...');
       _messageService = HiveService.instanceFor<MessageHiveModel>(
-        AppConstant.openBoxMessages,
+        boxName: AppConstant.openBoxMessages,
+        enableLogging: true,
       );
       await _messageService.init();
       print('💬 MessageManager initialized successfully');
@@ -26,7 +27,7 @@ class MessageManager {
   Future<void> loadMessagesForConversation(String conversationId) async {
     print('💬 Loading messages for conversation: $conversationId');
     try {
-      if (!_messageService.isBoxOpen()) {
+      if (!_messageService.isOpen) {
         print('💬 Message service not open, initializing...');
         await _messageService.init();
       }
@@ -51,7 +52,7 @@ class MessageManager {
     try {
       _messages.add(message);
       final messageHiveModel = MessageHiveModel.fromModel(message);
-      await _messageService.addItem(message.id, messageHiveModel);
+      await _messageService.put(message.id, messageHiveModel);
       print('💬 Message added successfully: ${message.id}');
     } catch (e) {
       print('💬 Error adding message: $e');
@@ -72,7 +73,7 @@ class MessageManager {
 
       for (final message in messagesToDelete) {
         try {
-          await _messageService.deleteItem(message.id);
+          await _messageService.delete(message.id);
           print('💬 Deleted message: ${message.id}');
         } catch (e) {
           print('💬 Failed to delete message ${message.id}: $e');
@@ -89,7 +90,7 @@ class MessageManager {
 
   Future<void> deleteAllMessages() async {
     try {
-      await _messageService.clearBox();
+      await _messageService.clear();
       _messages = [];
       print('💬 All messages deleted');
     } catch (e) {

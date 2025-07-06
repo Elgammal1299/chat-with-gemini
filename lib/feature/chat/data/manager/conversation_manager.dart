@@ -13,7 +13,8 @@ class ConversationManager {
     try {
       print('📂 Initializing ConversationManager...');
       _conversationService = HiveService.instanceFor<ConversationHiveModel>(
-        AppConstant.openBoxConversations,
+        boxName: AppConstant.openBoxConversations,
+        enableLogging: true,
       );
       await _conversationService.init();
       await loadConversations();
@@ -27,7 +28,7 @@ class ConversationManager {
   Future<void> loadConversations() async {
     print('📂 Loading conversations...');
     try {
-      if (!_conversationService.isBoxOpen()) {
+      if (!_conversationService.isOpen) {
         print('📂 Conversation service not open, initializing...');
         await _conversationService.init();
       }
@@ -50,10 +51,7 @@ class ConversationManager {
       final conversationHiveModel = ConversationHiveModel.fromModel(
         conversation,
       );
-      await _conversationService.addItem(
-        conversation.id,
-        conversationHiveModel,
-      );
+      await _conversationService.put(conversation.id, conversationHiveModel);
       await loadConversations();
     } catch (e) {
       print('📂 Error saving conversation: $e');
@@ -72,7 +70,7 @@ class ConversationManager {
         throw Exception('Conversation not found');
       }
 
-      await _conversationService.deleteItem(conversationId);
+      await _conversationService.delete(conversationId);
       await loadConversations();
       print('🔥 Conversation deleted successfully');
     } catch (e) {
@@ -83,7 +81,7 @@ class ConversationManager {
 
   Future<void> deleteAllConversations() async {
     try {
-      await _conversationService.clearBox();
+      await _conversationService.clear();
       _conversations = [];
       print('🔥 All conversations deleted');
     } catch (e) {

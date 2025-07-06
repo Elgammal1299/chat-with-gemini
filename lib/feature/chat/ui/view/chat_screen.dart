@@ -169,11 +169,11 @@ class _ChatScreenState extends State<ChatScreen> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () {
+            onPressed: () async {
               print('🔙 Back button pressed in chat screen');
-              // Reset chat state and load conversations when going back
+              // Handle chat screen back navigation properly
               final cubit = context.read<ChatCubit>();
-              cubit.resetState();
+              await cubit.handleChatScreenBack();
               Navigator.pop(context);
               print('🔙 Navigated back to home screen');
             },

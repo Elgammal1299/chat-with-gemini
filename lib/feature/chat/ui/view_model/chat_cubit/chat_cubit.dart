@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:chat_gemini_app/feature/chat/data/manager/chat_state_manager.dart';
 import 'package:chat_gemini_app/feature/chat/data/manager/conversation_manager.dart';
 import 'package:chat_gemini_app/feature/chat/data/manager/image_manager.dart';
@@ -7,7 +8,6 @@ import 'package:chat_gemini_app/feature/chat/data/model/conversation_model.dart'
 import 'package:chat_gemini_app/feature/chat/data/model/message_model.dart';
 import 'package:chat_gemini_app/feature/chat/data/service/chat_ai_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
 
 part 'chat_state.dart';
 
@@ -69,9 +69,23 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   Future<void> loadConversation(String conversationId) async {
+    print('📂 Loading conversation: $conversationId');
     emit(ChatLoading());
     try {
+      // Add timeout to prevent infinite loading
+      final completer = Completer<void>();
+
+      Timer(const Duration(seconds: 10), () {
+        if (!completer.isCompleted) {
+          completer.completeError(
+            TimeoutException('Loading conversation timed out'),
+          );
+        }
+      });
+
+      // Load conversation logic
       if (!_conversationManager.conversationExists(conversationId)) {
+        print('📂 Conversation not found: $conversationId');
         emit(ChatError('Conversation not found'));
         return;
       }
@@ -81,8 +95,18 @@ class ChatCubit extends Cubit<ChatState> {
       _stateManager.setMessages(_messageManager.messages);
       _imageManager.clearImage();
 
+      print(
+        '📂 Conversation loaded successfully: ${_stateManager.chatMessages.length} messages',
+      );
       emit(ChatSuccess(_stateManager.chatMessages));
+
+      completer.complete();
+      await completer.future;
+    } on TimeoutException {
+      print('📂 Loading conversation timed out: $conversationId');
+      emit(ChatError('Loading conversation timed out'));
     } catch (e) {
+      print('📂 Error loading conversation: $e');
       emit(ChatError('Failed to load conversation: $e'));
     }
   }
@@ -262,7 +286,16 @@ class ChatCubit extends Cubit<ChatState> {
     print('🔄 resetState called');
     _stateManager.resetState();
     _imageManager.clearImage();
-    await loadConversations();
+
+    // Load conversations without emitting loading state for reset
+    try {
+      await _conversationManager.loadConversations();
+      emit(ConversationsLoaded(_conversationManager.conversations));
+    } catch (e) {
+      print('🔄 Error loading conversations during reset: $e');
+      emit(ConversationsLoaded([]));
+    }
+
     print('🔄 State reset completed');
   }
 
@@ -276,6 +309,27 @@ class ChatCubit extends Cubit<ChatState> {
     _stateManager.clearCurrentConversation();
     _imageManager.clearImage();
     emit(ChatInitial());
+  }
+
+  /// Handle navigation back from chat screen
+  /// This method ensures proper state cleanup when leaving a chat
+  Future<void> handleChatScreenBack() async {
+    print('🔙 Handling chat screen back navigation');
+
+    // Clear current conversation state
+    _stateManager.clearCurrentConversation();
+    _imageManager.clearImage();
+
+    // Load conversations and emit proper state
+    try {
+      await _conversationManager.loadConversations();
+      emit(ConversationsLoaded(_conversationManager.conversations));
+    } catch (e) {
+      print('🔙 Error loading conversations on back navigation: $e');
+      emit(ConversationsLoaded([]));
+    }
+
+    print('🔙 Chat screen back navigation handled');
   }
 
   // Debug method for image processing
