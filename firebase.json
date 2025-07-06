@@ -1,0 +1,1 @@
+{"flutter":{"platforms":{"android":{"default":{"projectId":"chat-gemini-app","appId":"1:309987173588:android:584191deedeb2755d5c741","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"chat-gemini-app","configurations":{"android":"1:309987173588:android:584191deedeb2755d5c741","ios":"1:309987173588:ios:da615ba620eb7d10d5c741"}}}}}}
