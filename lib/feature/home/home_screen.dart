@@ -1,46 +1,38 @@
-import 'package:chat_gemini_app/core/DI/setup_get_it.dart';
-import 'package:chat_gemini_app/core/router/app_routes.dart';
 import 'package:chat_gemini_app/core/utils/app_colors.dart';
 import 'package:chat_gemini_app/feature/chat/data/model/conversation_model.dart';
-import 'package:chat_gemini_app/feature/chat/ui/view/chat_screen.dart';
 import 'package:chat_gemini_app/feature/chat/ui/view_model/chat_cubit/chat_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: getIt<ChatCubit>()..loadConversations(),
-      child: const HomeScreenView(),
-    );
-  }
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class HomeScreenView extends StatelessWidget {
-  const HomeScreenView({super.key});
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Load conversations when the screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ChatCubit>().loadConversations();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.chatBackground,
       appBar: AppBar(
         title: const Text(
           'Chat with Gemini',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: AppColors.primaryColor,
         elevation: 0,
         actions: [
-          IconButton(
-            onPressed: () {
-              context.read<ChatCubit>().debugHiveStatus();
-            },
-            icon: const Icon(Icons.bug_report, color: Colors.white),
-            tooltip: 'Debug Info',
-          ),
           IconButton(
             onPressed: () {
               context.read<ChatCubit>().debugTestImageProcessing();
@@ -238,21 +230,27 @@ class HomeScreenView extends StatelessWidget {
         ),
         trailing: PopupMenuButton<String>(
           onSelected: (value) {
-            if (value == 'delete') {
-              _deleteConversation(context, conversation.id);
-            } else if (value == 'debug') {
-              _showConversationDebugInfo(context, conversation);
+            switch (value) {
+              case 'open':
+                _openConversation(context, conversation);
+                break;
+              case 'delete':
+                _deleteConversation(context, conversation.id);
+                break;
+              case 'debug':
+                _showConversationDebugInfo(context, conversation);
+                break;
             }
           },
           itemBuilder:
               (context) => [
                 const PopupMenuItem(
-                  value: 'debug',
+                  value: 'open',
                   child: Row(
                     children: [
-                      Icon(Icons.info, color: Colors.blue),
+                      Icon(Icons.open_in_new, size: 20),
                       SizedBox(width: 8),
-                      Text('Debug Info'),
+                      Text('Open'),
                     ],
                   ),
                 ),
@@ -260,17 +258,41 @@ class HomeScreenView extends StatelessWidget {
                   value: 'delete',
                   child: Row(
                     children: [
-                      Icon(Icons.delete, color: Colors.red),
+                      Icon(Icons.delete, size: 20, color: Colors.red),
                       SizedBox(width: 8),
-                      Text('Delete'),
+                      Text('Delete', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'debug',
+                  child: Row(
+                    children: [
+                      Icon(Icons.bug_report, size: 20),
+                      SizedBox(width: 8),
+                      Text('Debug Info'),
                     ],
                   ),
                 ),
               ],
         ),
-        onTap: () => _openConversation(context, conversation.id),
+        onTap: () => _openConversation(context, conversation),
       ),
     );
+  }
+
+  void _startNewChat(BuildContext context) {
+    print('🆕 Start new chat button pressed');
+    final cubit = context.read<ChatCubit>();
+    cubit.createNewConversation();
+    Navigator.pushNamed(context, '/chat');
+  }
+
+  void _openConversation(BuildContext context, ConversationModel conversation) {
+    print('📂 Opening conversation: ${conversation.id}');
+    final cubit = context.read<ChatCubit>();
+    cubit.loadConversation(conversation.id);
+    Navigator.pushNamed(context, '/chat');
   }
 
   String _formatDate(DateTime date) {
@@ -278,60 +300,17 @@ class HomeScreenView extends StatelessWidget {
     final difference = now.difference(date);
 
     if (difference.inDays == 0) {
-      return DateFormat('HH:mm').format(date);
+      if (difference.inHours == 0) {
+        return '${difference.inMinutes} minutes ago';
+      }
+      return '${difference.inHours} hours ago';
     } else if (difference.inDays == 1) {
       return 'Yesterday';
     } else if (difference.inDays < 7) {
-      return DateFormat('EEEE').format(date);
+      return '${difference.inDays} days ago';
     } else {
-      return DateFormat('MMM dd, yyyy').format(date);
+      return '${date.day}/${date.month}/${date.year}';
     }
-  }
-
-  void _startNewChat(BuildContext context) {
-    final cubit = context.read<ChatCubit>();
-
-    // Check if there's an unsaved conversation
-    if (cubit.hasUnsavedConversation()) {
-      showDialog(
-        context: context,
-        builder:
-            (context) => AlertDialog(
-              title: const Text('Unsaved Conversation'),
-              content: const Text(
-                'You have an unsaved conversation. Would you like to continue it or start a new one?',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    cubit.continueUnsavedConversation();
-                    Navigator.pushNamed(context, AppRoutes.chatRoute);
-                  },
-                  child: const Text('Continue'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    cubit.createNewConversation();
-                    Navigator.pushNamed(context, AppRoutes.chatRoute);
-                  },
-                  child: const Text('New Chat'),
-                ),
-              ],
-            ),
-      );
-    } else {
-      cubit.createNewConversation();
-      Navigator.pushNamed(context, AppRoutes.chatRoute);
-    }
-  }
-
-  void _openConversation(BuildContext context, String conversationId) {
-    final cubit = context.read<ChatCubit>();
-    cubit.loadConversation(conversationId).then((_) {
-      Navigator.pushNamed(context, AppRoutes.chatRoute);
-    });
   }
 
   void _deleteConversation(BuildContext context, String conversationId) {
@@ -444,7 +423,7 @@ class HomeScreenView extends StatelessWidget {
                   );
 
                   try {
-                    await context.read<ChatCubit>().clearAllData();
+                    await context.read<ChatCubit>().deleteAllConversations();
                     Navigator.pop(context); // Close loading dialog
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
