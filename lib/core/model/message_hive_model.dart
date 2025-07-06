@@ -34,6 +34,7 @@
 // }
 import 'package:chat_gemini_app/feature/chat/data/model/message_model.dart';
 import 'package:hive/hive.dart';
+import 'dart:io';
 
 part 'message_hive_model.g.dart';
 
@@ -54,8 +55,8 @@ class MessageHiveModel extends HiveObject {
   @HiveField(4)
   final String? conversationId;
 
-  // @HiveField(5)
-  // final String? imagePath;
+  @HiveField(5)
+  final String? imagePath;
 
   MessageHiveModel({
     required this.id,
@@ -63,6 +64,7 @@ class MessageHiveModel extends HiveObject {
     required this.timestamp,
     required this.isUser,
     this.conversationId,
+    this.imagePath,
   });
 
   // ⬅️ تحويل إلى الموديل العادي
@@ -73,6 +75,7 @@ class MessageHiveModel extends HiveObject {
       timestamp: timestamp,
       isUser: isUser,
       conversationId: conversationId,
+      image: imagePath != null ? File(imagePath!) : null,
     );
   }
 
@@ -84,6 +87,7 @@ class MessageHiveModel extends HiveObject {
       timestamp: model.timestamp,
       isUser: model.isUser,
       conversationId: model.conversationId,
+      imagePath: model.image?.path,
     );
   }
 }

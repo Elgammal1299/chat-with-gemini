@@ -121,12 +121,14 @@ class CustomTextField extends StatelessWidget {
                 controller: _messageController,
 
                 onSubmitted: (message) {
-                  BlocProvider.of<ChatCubit>(
-                    context,
-                  ).sendMessage(_messageController.text);
-                  BlocProvider.of<ChatCubit>(context).removeImage();
-                  _messageController.clear();
-                  scrollDown!();
+                  if (message.trim().isNotEmpty) {
+                    BlocProvider.of<ChatCubit>(
+                      context,
+                    ).sendMessage(_messageController.text);
+                    BlocProvider.of<ChatCubit>(context).removeImage();
+                    _messageController.clear();
+                    scrollDown!();
+                  }
                 },
                 decoration: InputDecoration(
                   suffixIcon: IconButton(

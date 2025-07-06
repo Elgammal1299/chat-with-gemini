@@ -19,10 +19,5 @@ void main() async {
 
   await setupGetIt();
 
-  runApp(
-    BlocProvider(
-      create: (context) => getIt<ChatCubit>(),
-      child: const ChatApp(),
-    ),
-  );
+  runApp(BlocProvider.value(value: getIt<ChatCubit>(), child: const ChatApp()));
 }

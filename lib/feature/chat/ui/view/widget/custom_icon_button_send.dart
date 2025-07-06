@@ -35,13 +35,14 @@ class CustomIconButtonSend extends StatelessWidget {
           iconSize: 32,
           icon: const Icon(Icons.send),
           onPressed: () {
-            BlocProvider.of<ChatCubit>(
-              context,
-              
-            ).sendMessage(_messageController.text);
-            BlocProvider.of<ChatCubit>(context).removeImage();
-            _messageController.clear();
-            scrollDown!();
+            if (_messageController.text.trim().isNotEmpty) {
+              BlocProvider.of<ChatCubit>(
+                context,
+              ).sendMessage(_messageController.text);
+              BlocProvider.of<ChatCubit>(context).removeImage();
+              _messageController.clear();
+              scrollDown!();
+            }
           },
         );
       },

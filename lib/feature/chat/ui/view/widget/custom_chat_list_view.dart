@@ -10,10 +10,18 @@ class CustomChatListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ChatCubit, ChatState>(
-      buildWhen: (previous, current) => current is ChatSuccess,
+      buildWhen:
+          (previous, current) =>
+              current is ChatSuccess ||
+              current is ChatError ||
+              current is ChatLoading ||
+              current is ChatInitial,
       builder: (context, state) {
         if (state is ChatSuccess) {
           final messages = state.messages;
+          if (messages.isEmpty) {
+            return const Center(child: Text('Start chatting!'));
+          }
           return ListView.separated(
             controller: scrollController,
             separatorBuilder: (context, index) => SizedBox(height: 8.0),
@@ -25,6 +33,10 @@ class CustomChatListView extends StatelessWidget {
           );
         } else if (state is ChatError) {
           return Center(child: Text(state.error));
+        } else if (state is ChatLoading) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (state is ChatInitial) {
+          return const Center(child: Text('Start chatting!'));
         }
         return const Center(child: Text('Start chatting!'));
       },

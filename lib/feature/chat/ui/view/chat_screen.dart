@@ -126,34 +126,62 @@ class _ChatScreenState extends State<ChatScreen> {
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder:
           (context) => AlertDialog(
             title: const Text('Save Conversation'),
-            content: TextField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: 'Conversation Title',
-                hintText: 'Enter a title for this conversation',
-              ),
-              autofocus: true,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Conversation Title',
+                    hintText: 'Enter a title for this conversation',
+                  ),
+                  autofocus: true,
+                ),
+                const SizedBox(height: 16),
+                BlocBuilder<ChatCubit, ChatState>(
+                  buildWhen: (previous, current) => current is ChatLoading,
+                  builder: (context, state) {
+                    if (state is ChatLoading) {
+                      return const Row(
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(width: 16),
+                          Text('Saving...'),
+                        ],
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ],
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('Cancel'),
               ),
-              ElevatedButton(
-                onPressed: () {
-                  if (_titleController.text.trim().isNotEmpty) {
-                    cubit.saveConversation(_titleController.text.trim());
-                    Navigator.pop(context);
-                    Navigator.pushReplacementNamed(
-                      context,
-                      AppRoutes.homeRoute,
-                    );
-                  }
+              BlocBuilder<ChatCubit, ChatState>(
+                buildWhen: (previous, current) => current is ChatLoading,
+                builder: (context, state) {
+                  return ElevatedButton(
+                    onPressed:
+                        state is ChatLoading
+                            ? null
+                            : () {
+                              if (_titleController.text.trim().isNotEmpty) {
+                                cubit.saveConversation(
+                                  _titleController.text.trim(),
+                                );
+                                // Don't close dialog immediately, let the loading state handle it
+                              }
+                            },
+                    child: const Text('Save'),
+                  );
                 },
-                child: const Text('Save'),
               ),
             ],
           ),
@@ -162,53 +190,79 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.chatBackground,
-      appBar: AppBar(
-        title: const Text('Chat with Gemini'),
-        backgroundColor: AppColors.primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () async {
-            await context.read<ChatCubit>().resetState();
-            Navigator.pop(context);
-          },
-        ),
-        actions: [
-          BlocBuilder<ChatCubit, ChatState>(
-            buildWhen:
-                (previous, current) =>
-                    current is ChatSuccess && current.messages.isNotEmpty,
-
-            builder: (context, state) {
-              if (state is ChatSuccess && state.messages.isNotEmpty) {
-                return IconButton(
-                  onPressed: _showSaveDialog,
-                  icon: const Icon(Icons.save),
-                  tooltip: 'Save Conversation',
-                );
-              }
-              return const SizedBox.shrink();
+    return BlocListener<ChatCubit, ChatState>(
+      listenWhen:
+          (previous, current) => current is ChatSuccess || current is ChatError,
+      listener: (context, state) {
+        if (state is ChatSuccess) {
+          // Check if we're in a save operation context
+          if (_titleController.text.isNotEmpty) {
+            Navigator.pop(context); // Close dialog
+            Navigator.pop(context); // Go back to home screen
+            _titleController.clear();
+          }
+        } else if (state is ChatError) {
+          // Show error and close dialog
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: ${state.error}')));
+          Navigator.pop(context); // Close dialog
+          _titleController.clear();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.chatBackground,
+        appBar: AppBar(
+          title: const Text('Chat with Gemini'),
+          backgroundColor: AppColors.primaryColor,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              // Don't reset state when going back, just navigate
+              Navigator.pop(context);
             },
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-          child: Column(
-            children: [
-              Expanded(
-                child: CustomChatListView(scrollController: _scrollController),
-              ),
-              SizedBox(height: 24.0),
-              CustomTextField(
-                messageController: _messageController,
-                scrollDown: _scrollDown,
-              ),
-            ],
+          actions: [
+            BlocBuilder<ChatCubit, ChatState>(
+              buildWhen:
+                  (previous, current) =>
+                      current is ChatSuccess && current.messages.isNotEmpty,
+
+              builder: (context, state) {
+                if (state is ChatSuccess && state.messages.isNotEmpty) {
+                  return IconButton(
+                    onPressed: _showSaveDialog,
+                    icon: const Icon(Icons.save),
+                    tooltip: 'Save Conversation',
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ],
+        ),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 12.0,
+            ),
+            child: Column(
+              children: [
+                Expanded(
+                  child: CustomChatListView(
+                    scrollController: _scrollController,
+                  ),
+                ),
+                SizedBox(height: 24.0),
+                CustomTextField(
+                  messageController: _messageController,
+                  scrollDown: _scrollDown,
+                ),
+              ],
+            ),
           ),
         ),
       ),

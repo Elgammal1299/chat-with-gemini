@@ -19,7 +19,7 @@ Future<void> setupGetIt() async {
   getIt.registerLazySingleton<ChatRepo>(() => ChatRepo(getIt<ChatService>()));
 
   // ✅ Register ChatCubit
-  getIt.registerFactory<ChatCubit>(() => ChatCubit(getIt<ChatRepo>()));
+  getIt.registerLazySingleton<ChatCubit>(() => ChatCubit(getIt<ChatRepo>()));
 
   // ✅ Register ApiService
   getIt.registerLazySingleton<FireBaseServices>(() => FireBaseServices());

@@ -1,300 +1,8 @@
-// import 'package:chat_gemini_app/DI/setup_get_it.dart';
-// import 'package:chat_gemini_app/core/router/app_routes.dart';
-// import 'package:chat_gemini_app/core/utils/app_colors.dart';
-// import 'package:chat_gemini_app/feature/chat/data/model/conversation_model.dart';
-// import 'package:chat_gemini_app/feature/chat/ui/view_model/chat_cubit/chat_cubit.dart';
-// import 'package:flutter/material.dart';
-// import 'package:flutter_bloc/flutter_bloc.dart';
-// import 'package:intl/intl.dart';
-
-// class HomeScreen extends StatelessWidget {
-//   const HomeScreen({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return BlocProvider.value(
-//       value: getIt<ChatCubit>()..loadConversations(),
-//       child: const HomeScreenView(),
-//     );
-//   }
-// }
-
-// class HomeScreenView extends StatelessWidget {
-//   const HomeScreenView({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return BlocListener<ChatCubit, ChatState>(
-//       listenWhen:
-//           (previous, current) => current is ChatSuccess || current is ChatError,
-//       listener: (context, state) {
-//         if (state is ChatSuccess) {
-//           Navigator.pushNamed(context, AppRoutes.chatRoute);
-//         } else if (state is ChatError) {
-//           ScaffoldMessenger.of(
-//             context,
-//           ).showSnackBar(SnackBar(content: Text('Error: ${state.error}')));
-//         }
-//       },
-//       child: Scaffold(
-//         appBar: AppBar(
-//           title: const Text(
-//             'Chat with Gemini',
-//             style: TextStyle(color: Colors.white),
-//           ),
-//           backgroundColor: AppColors.primaryColor,
-//         ),
-//         body: BlocBuilder<ChatCubit, ChatState>(
-//           buildWhen:
-//               (previous, current) =>
-//                   current is ChatLoading ||
-//                   current is ConversationsLoaded ||
-//                   current is ChatError,
-//           builder: (context, state) {
-//             if (state is ChatLoading) {
-//               return const Center(child: CircularProgressIndicator());
-//             }
-
-//             if (state is ChatError) {
-//               return Center(
-//                 child: Column(
-//                   mainAxisAlignment: MainAxisAlignment.center,
-//                   children: [
-//                     const Icon(
-//                       Icons.error_outline,
-//                       color: Colors.red,
-//                       size: 64,
-//                     ),
-//                     const SizedBox(height: 12),
-//                     Text(
-//                       'Error: ${state.error}',
-//                       style: const TextStyle(fontSize: 16),
-//                     ),
-//                     const SizedBox(height: 12),
-//                     ElevatedButton(
-//                       onPressed:
-//                           () => context.read<ChatCubit>().loadConversations(),
-//                       child: const Text('Retry'),
-//                     ),
-//                   ],
-//                 ),
-//               );
-//             }
-
-//             if (state is ConversationsLoaded) {
-//               return _buildContent(context, state.conversations);
-//             }
-
-//             return const Center(child: CircularProgressIndicator());
-//           },
-//         ),
-//       ),
-//     );
-//   }
-
-//   Widget _buildContent(
-//     BuildContext context,
-//     List<ConversationModel> conversations,
-//   ) {
-//     return Column(
-//       children: [
-//         Padding(
-//           padding: const EdgeInsets.all(16),
-//           child: ElevatedButton.icon(
-//             onPressed: () => _handleNewChat(context),
-//             icon: const Icon(Icons.add),
-//             label: const Text('Start New Chat'),
-//             style: ElevatedButton.styleFrom(
-//               backgroundColor: AppColors.primaryColor,
-//               foregroundColor: Colors.white,
-//               minimumSize: const Size(double.infinity, 50),
-//               shape: RoundedRectangleBorder(
-//                 borderRadius: BorderRadius.circular(12),
-//               ),
-//             ),
-//           ),
-//         ),
-//         const Divider(),
-//         Expanded(
-//           child:
-//               conversations.isEmpty
-//                   ? _buildEmptyState()
-//                   : ListView.builder(
-//                     padding: const EdgeInsets.all(16),
-//                     itemCount: conversations.length,
-//                     itemBuilder: (context, index) {
-//                       final conversation = conversations[index];
-//                       return _buildConversationTile(context, conversation);
-//                     },
-//                   ),
-//         ),
-//       ],
-//     );
-//   }
-
-//   Widget _buildEmptyState() {
-//     return Center(
-//       child: Column(
-//         mainAxisAlignment: MainAxisAlignment.center,
-//         children: [
-//           Icon(Icons.chat_bubble_outline, size: 80, color: Colors.grey[400]),
-//           const SizedBox(height: 16),
-//           Text(
-//             'No conversations yet',
-//             style: TextStyle(color: Colors.grey[600], fontSize: 18),
-//           ),
-//           const SizedBox(height: 8),
-//           Text(
-//             'Start your first chat with Gemini!',
-//             style: TextStyle(color: Colors.grey[500]),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-
-//   Widget _buildConversationTile(
-//     BuildContext context,
-//     ConversationModel conversation,
-//   ) {
-//     return Card(
-//       margin: const EdgeInsets.only(bottom: 12),
-//       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-//       child: ListTile(
-//         contentPadding: const EdgeInsets.all(16),
-//         leading: CircleAvatar(
-//           backgroundColor: AppColors.primaryColor,
-//           child: Icon(Icons.chat_outlined, color: Colors.white),
-//         ),
-//         title: Text(
-//           conversation.title,
-//           style: const TextStyle(fontWeight: FontWeight.bold),
-//           maxLines: 1,
-//           overflow: TextOverflow.ellipsis,
-//         ),
-//         subtitle: Column(
-//           crossAxisAlignment: CrossAxisAlignment.start,
-//           children: [
-//             const SizedBox(height: 4),
-//             Text(
-//               conversation.lastMessagepreview,
-//               maxLines: 2,
-//               overflow: TextOverflow.ellipsis,
-//               style: const TextStyle(fontSize: 14, color: Colors.black54),
-//             ),
-//             const SizedBox(height: 4),
-//             Text(
-//               _formatDate(conversation.createdAt),
-//               style: const TextStyle(fontSize: 12, color: Colors.grey),
-//             ),
-//           ],
-//         ),
-//         trailing: PopupMenuButton<String>(
-//           onSelected: (value) {
-//             if (value == 'delete') {
-//               _confirmDelete(context, conversation.id);
-//             }
-//           },
-//           itemBuilder:
-//               (_) => [
-//                 const PopupMenuItem(
-//                   value: 'delete',
-//                   child: Row(
-//                     children: [
-//                       Icon(Icons.delete, color: Colors.red),
-//                       SizedBox(width: 8),
-//                       Text('Delete'),
-//                     ],
-//                   ),
-//                 ),
-//               ],
-//         ),
-//         onTap:
-//             () => context.read<ChatCubit>().loadConversation(conversation.id),
-//       ),
-//     );
-//   }
-
-//   String _formatDate(DateTime date) {
-//     final now = DateTime.now();
-//     final diff = now.difference(date);
-
-//     if (diff.inDays == 0) return DateFormat('HH:mm').format(date);
-//     if (diff.inDays == 1) return 'Yesterday';
-//     if (diff.inDays < 7) return DateFormat('EEEE').format(date);
-//     return DateFormat('MMM dd, yyyy').format(date);
-//   }
-
-//   void _handleNewChat(BuildContext context) {
-//     final cubit = context.read<ChatCubit>();
-//     if (cubit.hasUnsavedConversation()) {
-//       showDialog(
-//         context: context,
-//         builder:
-//             (_) => AlertDialog(
-//               title: const Text('Unsaved Chat'),
-//               content: const Text(
-//                 'Continue the last unsaved chat or start new one?',
-//               ),
-//               actions: [
-//                 TextButton(
-//                   onPressed: () => Navigator.pop(context),
-//                   child: const Text('Cancel'),
-//                 ),
-//                 TextButton(
-//                   onPressed: () {
-//                     Navigator.pop(context);
-//                     cubit.continueUnsavedConversation();
-//                   },
-//                   child: const Text('Continue'),
-//                 ),
-//                 TextButton(
-//                   onPressed: () {
-//                     Navigator.pop(context);
-//                     cubit.createNewConversation();
-//                   },
-//                   child: const Text('New Chat'),
-//                 ),
-//               ],
-//             ),
-//       );
-//     } else {
-//       cubit.createNewConversation();
-//     }
-//   }
-
-//   void _confirmDelete(BuildContext context, String conversationId) {
-//     showDialog(
-//       context: context,
-//       builder:
-//           (_) => AlertDialog(
-//             title: const Text('Delete Conversation'),
-//             content: const Text(
-//               'Are you sure you want to delete this conversation?',
-//             ),
-//             actions: [
-//               TextButton(
-//                 onPressed: () => Navigator.pop(context),
-//                 child: const Text('Cancel'),
-//               ),
-//               TextButton(
-//                 onPressed: () {
-//                   Navigator.pop(context);
-//                   context.read<ChatCubit>().deleteConversation(conversationId);
-//                 },
-//                 style: TextButton.styleFrom(foregroundColor: Colors.red),
-//                 child: const Text('Delete'),
-//               ),
-//             ],
-//           ),
-//     );
-//   }
-// }
-
 import 'package:chat_gemini_app/core/DI/setup_get_it.dart';
 import 'package:chat_gemini_app/core/router/app_routes.dart';
 import 'package:chat_gemini_app/core/utils/app_colors.dart';
 import 'package:chat_gemini_app/feature/chat/data/model/conversation_model.dart';
+import 'package:chat_gemini_app/feature/chat/ui/view/chat_screen.dart';
 import 'package:chat_gemini_app/feature/chat/ui/view_model/chat_cubit/chat_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -317,81 +25,55 @@ class HomeScreenView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<ChatCubit, ChatState>(
-      listenWhen: (previous, current) {
-        return current is ChatSuccess || current is ChatError;
-      },
-      listener: (context, state) {
-        if (state is ChatSuccess) {
-          Navigator.pushNamed(context, AppRoutes.chatRoute);
-          // Navigator.push(
-          //   context,
-          //   MaterialPageRoute(
-          //     builder:
-          //         (_) => BlocProvider.value(
-          //           value: context.read<ChatCubit>(),
-          //           child:
-          //               ChatScreen(), // or whatever your chat screen widget is
-          //         ),
-          //   ),
-          // );
-        } else if (state is ChatError) {
-          // Show error message
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error: ${state.error}')));
-        }
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            'Chat with Gemini',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-          ),
-          backgroundColor: AppColors.primaryColor,
-          elevation: 0,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Chat with Gemini',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
-        body: BlocBuilder<ChatCubit, ChatState>(
-          buildWhen:
-              (previous, current) =>
-                  current is ConversationsLoaded || current is ChatError,
-          builder: (context, state) {
-            if (state is ChatLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (state is ConversationsLoaded) {
-              return _buildHomeContent(context, state.conversations);
-            }
-
-            if (state is ChatError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Error: ${state.error}',
-                      style: const TextStyle(fontSize: 16),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        context.read<ChatCubit>().loadConversations();
-                      },
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            // Default state - show loading
+        backgroundColor: AppColors.primaryColor,
+        elevation: 0,
+      ),
+      body: BlocBuilder<ChatCubit, ChatState>(
+        buildWhen:
+            (previous, current) =>
+                current is ConversationsLoaded || current is ChatError,
+        builder: (context, state) {
+          if (state is ChatLoading) {
             return const Center(child: CircularProgressIndicator());
-          },
-        ),
+          }
+
+          if (state is ConversationsLoaded) {
+            return _buildHomeContent(context, state.conversations);
+          }
+
+          if (state is ChatError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error: ${state.error}',
+                    style: const TextStyle(fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      context.read<ChatCubit>().loadConversations();
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // Default state - show loading
+          return const Center(child: CircularProgressIndicator());
+        },
       ),
     );
   }
@@ -581,6 +263,7 @@ class HomeScreenView extends StatelessWidget {
                   onPressed: () {
                     Navigator.pop(context);
                     cubit.continueUnsavedConversation();
+                    Navigator.pushNamed(context, AppRoutes.chatRoute);
                   },
                   child: const Text('Continue'),
                 ),
@@ -588,6 +271,7 @@ class HomeScreenView extends StatelessWidget {
                   onPressed: () {
                     Navigator.pop(context);
                     cubit.createNewConversation();
+                    Navigator.pushNamed(context, AppRoutes.chatRoute);
                   },
                   child: const Text('New Chat'),
                 ),
@@ -596,12 +280,15 @@ class HomeScreenView extends StatelessWidget {
       );
     } else {
       cubit.createNewConversation();
+      Navigator.pushNamed(context, AppRoutes.chatRoute);
     }
   }
 
   void _openConversation(BuildContext context, String conversationId) {
     final cubit = context.read<ChatCubit>();
-    cubit.loadConversation(conversationId);
+    cubit.loadConversation(conversationId).then((_) {
+      Navigator.pushNamed(context, AppRoutes.chatRoute);
+    });
   }
 
   void _deleteConversation(BuildContext context, String conversationId) {
