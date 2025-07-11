@@ -75,6 +75,7 @@ class _CustomRegesterFormFieldState extends State<CustomRegesterFormField> {
               ),
               const SizedBox(height: 12),
               CustomTextForm(
+                isObscureText: true,
                 controller: _passwordController,
                 hintText: 'Password',
                 prefixIcon: const Icon(Icons.visibility_off),

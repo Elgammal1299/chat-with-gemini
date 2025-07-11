@@ -14,7 +14,7 @@ class ChatApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      initialRoute: AppRoutes.homeRoute,
+      initialRoute: AppRoutes.splachRoute,
       onGenerateRoute: AppRouter.generateRoute,
     );
   }

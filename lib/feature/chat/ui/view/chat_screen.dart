@@ -195,13 +195,6 @@ class _ChatScreenState extends State<ChatScreen> {
                 return const SizedBox.shrink();
               },
             ),
-            IconButton(
-              onPressed: () {
-                context.read<ChatCubit>().debugTestImageProcessing();
-              },
-              icon: const Icon(Icons.image),
-              tooltip: 'Test Image Processing',
-            ),
           ],
         ),
         body: SafeArea(

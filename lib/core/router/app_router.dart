@@ -6,14 +6,15 @@ import 'package:chat_gemini_app/feature/auth/ui/view_model/auth_cubit/auth_cubit
 import 'package:chat_gemini_app/feature/chat/ui/view/chat_screen.dart';
 import 'package:chat_gemini_app/feature/chat/ui/view_model/chat_cubit/chat_cubit.dart';
 import 'package:chat_gemini_app/feature/home/home_screen.dart';
+import 'package:chat_gemini_app/feature/splah_screen/splah_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AppRouter {
   static Route? generateRoute(RouteSettings settings) {
     switch (settings.name) {
-      // case AppRoutes.splasahRouter:
-      //   return MaterialPageRoute(builder: (_) => SplashScreen());
+      case AppRoutes.splachRoute:
+        return MaterialPageRoute(builder: (_) => SplashScreen());
       case AppRoutes.homeRoute:
         return MaterialPageRoute(builder: (_) => HomeScreen());
       case AppRoutes.regesterRoute:

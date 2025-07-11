@@ -26,6 +26,8 @@ class _CustomLoginFormFieldState extends State<CustomLoginFormField> {
           ),
           const SizedBox(height: 12),
           CustomTextForm(
+            isObscureText: true,
+
             hintText: 'Password',
             prefixIcon: const Icon(Icons.visibility_off),
           ),

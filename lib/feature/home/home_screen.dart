@@ -34,15 +34,8 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            onPressed: () {
-              context.read<ChatCubit>().debugTestImageProcessing();
-            },
-            icon: const Icon(Icons.image, color: Colors.white),
-            tooltip: 'Test Image Processing',
-          ),
-          IconButton(
             onPressed: () => _showClearAllDialog(context),
-            icon: const Icon(Icons.clear_all, color: Colors.white),
+            icon: const Icon(Icons.delete, color: Colors.white),
             tooltip: 'Clear All Data',
           ),
         ],
@@ -125,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.add, size: 24),
+                Icon(Icons.chat_bubble_outline, size: 24),
                 SizedBox(width: 8),
                 Text(
                   'Start New Chat',
@@ -197,11 +190,11 @@ class _HomeScreenState extends State<HomeScreen> {
     ConversationModel conversation,
   ) {
     return Card(
+      color: AppColors.otherMessageColor,
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
         leading: CircleAvatar(
           backgroundColor: AppColors.primaryColor,
           child: Icon(Icons.chat_outlined, color: Colors.white, size: 20),
@@ -219,7 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(
               conversation.lastMessagepreview,
               style: TextStyle(color: Colors.grey[600], fontSize: 14),
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
@@ -262,16 +255,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       Icon(Icons.delete, size: 20, color: Colors.red),
                       SizedBox(width: 8),
                       Text('Delete', style: TextStyle(color: Colors.red)),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'debug',
-                  child: Row(
-                    children: [
-                      Icon(Icons.bug_report, size: 20),
-                      SizedBox(width: 8),
-                      Text('Debug Info'),
                     ],
                   ),
                 ),
